@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Stock</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      padding: 25px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    .status {
+      margin-bottom: 20px;
+      color: #aaa;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 15px;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .country {
+      font-size: 21px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .code {
+      color: #999;
+      margin-bottom: 14px;
+    }
+
+    .slots {
+      font-size: 30px;
+      font-weight: bold;
+      color: #00ff99;
+    }
+
+    .reserved {
+      margin-top: 8px;
+      color: #bbb;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #ff6666;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Live Stock</h1>
+  <div class="status" id="status">Henter stock...</div>
+  <div class="grid" id="stock"></div>
+
+  <script>
+    async function loadStock() {
+      const stockDiv = document.getElementById("stock");
+      const statusDiv = document.getElementById("status");
+
+      try {
+        statusDiv.textContent = "Henter stock...";
+
+        const response = await fetch("/.netlify/functions/stock");
+
+        if (!response.ok) {
+          throw new Error("Server error: " + response.status);
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("API returnerte ikke liste");
+        }
+
+        stockDiv.innerHTML = "";
+
+        data.forEach(item => {
+          const country = item.country || "Unknown";
+          const code = item.country_code || "XX";
+          const slots = item.available_slots ?? item.slots ?? 0;
+          const reserved = item.reserved ?? 0;
+
+          stockDiv.innerHTML += `
+            <div class="card">
+              <div class="country">${country}</div>
+              <div class="code">${code}</div>
+              <div class="slots">${slots} slots</div>
+              <div class="reserved">Reserved: ${reserved}</div>
+            </div>
+          `;
+        });
+
+        statusDiv.textContent = "Oppdatert nå";
+
+      } catch (error) {
+        console.error(error);
+        statusDiv.innerHTML = '<span class="error">Kunne ikke hente stock: ' + error.message + '</span>';
+      }
+    }
+
+    loadStock();
+    setInterval(loadStock, 30000);
+  </script>
+
+</body>
+</html>
